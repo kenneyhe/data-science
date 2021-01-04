@@ -48,8 +48,10 @@ def backup(dir_list, isFull=False, generate=False):
         output="output_%s_run_backup_%s.ipynb" % (timestamp, uuid_str)
         try:
             pm.execute_notebook("BackupHelper.ipynb",
-                                output,
-                                {"PASS": PASS,
+                                output,       
+                                {
+                                 "USER": USER,                                  
+                                 "PASS": PASS,
                                  "DIR": dir,
                                  "DEBUG": False,
                                  "FULL": isFull,
@@ -84,7 +86,9 @@ def restore(dir_dict):
         try:
             pm.execute_notebook("RestoreBackup.ipynb",
                                 output,
-                                {"PASS": PASS, 
+                                {
+                                 "USER": USER,
+                                 "PASS": PASS, 
                                  "DIR": dir,
                                  "TAG": tag,
                                  "DEBUG": True}
