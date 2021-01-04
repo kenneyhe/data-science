@@ -18,7 +18,7 @@ def sync_mobile(dir):
         PARAM: dir_list is list of directorys under Desktop
                gs://.../.. can be used instead if upload output to
                s3
-    '''    
+    '''
     if INCR_EXPERIMENTAL:
         dir = dir.lower()
         # match backup helper convention
@@ -27,8 +27,8 @@ def sync_mobile(dir):
         status = os.system('''
                     docker login -u {user} --password {dpass};
                     docker tag kenney/{tname} kenney/mobile:{tname};
-                    docker tag kenney/{tname} kenney/mobile:{tdir}-latest;            
-                    docker push kenney/mobile:{tname} && docker push kenney/mobile:{tdir}-latest;         
+                    docker tag kenney/{tname} kenney/mobile:{tdir}-latest;
+                    docker push kenney/mobile:{tname} && docker push kenney/mobile:{tdir}-latest;
                     '''.format(tname=TAG_NAME, tdir=dir, user=USER, dpass=PASS))
         if DEBUG:
             print('%s has status %d: done' % (TAG_NAME, status))
@@ -48,9 +48,9 @@ def backup(dir_list, isFull=False, generate=False):
         output="output_%s_run_backup_%s.ipynb" % (timestamp, uuid_str)
         try:
             pm.execute_notebook("BackupHelper.ipynb",
-                                output,       
+                                output,
                                 {
-                                 "USER": USER,                                  
+                                 "USER": USER,
                                  "PASS": PASS,
                                  "DIR": dir,
                                  "DEBUG": False,
@@ -88,7 +88,7 @@ def restore(dir_dict):
                                 output,
                                 {
                                  "USER": USER,
-                                 "PASS": PASS, 
+                                 "PASS": PASS,
                                  "DIR": dir,
                                  "TAG": tag,
                                  "DEBUG": True}
@@ -107,7 +107,7 @@ def cleanup():
     '''
         DESCRIPTION: cleanup pyc, .DS_Store, __pycache__ files and
                prune all images unused
-        PARAM: None   
+        PARAM: None
     '''
     status = os.system('''
                 find . -iname \*pyc -exec rm {} \;
@@ -121,7 +121,7 @@ def cleanup():
 def backup_incre(dir_list):
     '''
         DESCRIPTION: use docker-compose to do incremental and faster
-                backup.  Must have INCR_EXPERIMENTAL as True to 
+                backup.  Must have INCR_EXPERIMENTAL as True to
                 speedup. Uses latest tag to speed up
         PARAM: None
         RETURN: if success returns 0, otherwise non-zero
@@ -136,15 +136,15 @@ def backup_incre(dir_list):
 def widget_run_default_backup(pos):
     '''
         DESCRIPTION: use button to trigger backup from the blist selected
-        PARAM: None      
+        PARAM: None
     '''
 
     selected = blist.trait_values()['value']
     if DEBUG:
         print(selected)
     pos.set_trait('button_style', 'info')
-    pos.set_trait('description', 'In progress...') 
-    
+    pos.set_trait('description', 'In progress...')
+
     if backup_incre(selected) == 0:
         pos.set_trait('button_style', 'success')
         pos.set_trait('description', 'Done')
