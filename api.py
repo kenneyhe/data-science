@@ -18,7 +18,6 @@ UUID_STR=str(uuid.uuid1())[0:7]
 INCR_EXPERIMENTAL=False
 DEBUG=False
 RESTORE=False
-DEP_NEED=False
 
 
 def sync_mobile(dir_name, usern="", passw=""):
@@ -54,6 +53,7 @@ def backup(dir_list, is_full=False, generate=False, user="", passw=""):
     '''
     for d_name in dir_list:
         uuid_str=str(uuid.uuid1())[0:7]
+        d_name = d_name.split("/")[0]
         output="output_%s_run_backup_%s.ipynb" % (timestamp, uuid_str)
         try:
             notebook = pm.execute_notebook("BackupHelper.ipynb",
@@ -92,8 +92,9 @@ def restore(dir_dict, user="", passw=""):
                gs://.../.. can be used instead if upload output to
                s3
     '''
-    for dir_name, tag in dir_dict.items():
+    for d_name, tag in dir_dict.items():
         uuid_str=str(uuid.uuid1())[0:7]
+        d_name = d_name.split("/")[0]
         output="output_%s_run_restore_%s.ipynb" % (timestamp, uuid_str)
         try:
             notebook = pm.execute_notebook("RestoreBackup.ipynb",
@@ -101,12 +102,12 @@ def restore(dir_dict, user="", passw=""):
                                 {
                                  "USER": user,
                                  "PASS": passw,
-                                 "DIR": dir,
+                                 "DIR": d_name,
                                  "TAG": tag,
                                  "DEBUG": True}
                                )
         except pm.PapermillExecutionError:
-            print("failed to run %s" %(dir_name))
+            print("failed to run %s" %(d_name))
             if DEBUG:
                 print(uuid_str, '=>', output)
                 print(str(notebook))
