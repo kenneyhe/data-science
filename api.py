@@ -1,10 +1,17 @@
+'''
+API for backup current directory to kenney/mobile docker hub repo with
+dated tag
+'''
+
+import datetime
+import uuid
+import os
+import sys
 import papermill as pm
-import datetime, uuid, os, sys
 
 timestamp=datetime.date.today().strftime("%Y%m%d%H%sb")
-uuid_str=str(uuid.uuid1())[0:7]
+UUID_STR=str(uuid.uuid1())[0:7]
 
-import ipywidgets as widgets
 
 # default feature flags
 INCR_EXPERIMENTAL=False
@@ -12,7 +19,8 @@ DEBUG=False
 RESTORE=False
 DEP_NEED=False
 
-def sync_mobile(dir):
+
+def sync_mobile(dir_name, usern="", passw=""):
     '''
         DESCRIPTION: sync latest to the current dated tag
         PARAM: dir_list is list of directorys under Desktop
@@ -20,22 +28,22 @@ def sync_mobile(dir):
                s3
     '''
     if INCR_EXPERIMENTAL:
-        dir = dir.lower()
+        d_lower = dir_name.lower()
         # match backup helper convention
-        TAG_NAME="%s-%s" % (dir, timestamp)
+        tag_name ="%s-%s" % (d_lower, timestamp)
 
         status = os.system('''
                     docker login -u {user} --password {dpass};
                     docker tag kenney/{tname} kenney/mobile:{tname};
                     docker tag kenney/{tname} kenney/mobile:{tdir}-latest;
                     docker push kenney/mobile:{tname} && docker push kenney/mobile:{tdir}-latest;
-                    '''.format(tname=TAG_NAME, tdir=dir, user=USER, dpass=PASS))
+                    '''.format(tname=tag_name, tdir=d_lower, user=usern, dpass=passw))
         if DEBUG:
-            print('%s has status %d: done' % (TAG_NAME, status))
+            print('%s has status %d: done' % (tag_name, status))
         assert status == 0, "failed"
 
 
-def backup(dir_list, isFull=False, generate=False):
+def backup(dir_list, is_full=False, generate=False, user="", passw=""):
     '''
         DESCRIPTION: backups the dir_lists and upload to docker
         PARAM: dir_list is list of directorys under Desktop
@@ -43,35 +51,38 @@ def backup(dir_list, isFull=False, generate=False):
                s3
         EXCEPTIONS: throw exception up to caller if unexpected
     '''
-    for dir in dir_list:
+    for d_name in dir_list:
         uuid_str=str(uuid.uuid1())[0:7]
         output="output_%s_run_backup_%s.ipynb" % (timestamp, uuid_str)
         try:
-            pm.execute_notebook("BackupHelper.ipynb",
+            notebook = pm.execute_notebook("BackupHelper.ipynb",
                                 output,
                                 {
-                                 "USER": USER,
-                                 "PASS": PASS,
-                                 "DIR": dir,
+                                 "USER": user,
+                                 "PASS": passw,
+                                 "DIR": d_name,
                                  "DEBUG": False,
-                                 "FULL": isFull,
+                                 "FULL": is_full,
                                  "GEN": generate,
                                  "progress_bar": True,
                                  "log_output": True,
                                  "report_mode": True,
                                 }
                                )
+            print(notebook)
         except pm.PapermillExecutionError:
-            print("failed to run %s" %(dir))
+            print("failed to run %s" %(d_name))
             if DEBUG:
                 print(uuid_str, '=>', output)
+                print(str(notebook))
+
             sys.exit(1)
-        print('%s is done' % (dir))
+        print('%s is done' % (d_name))
 
-        sync_mobile(dir)
+        sync_mobile(d_name)
 
 
-def restore(dir_dict):
+def restore(dir_dict, user="", passw=""):
     '''
         DESCRIPTION: restores the dir_lists and upload to docker
                assuming all directories are made to be public
@@ -80,26 +91,24 @@ def restore(dir_dict):
                gs://.../.. can be used instead if upload output to
                s3
     '''
-    for dir, tag in dir_dict.items():
+    for dir_name, tag in dir_dict.items():
         uuid_str=str(uuid.uuid1())[0:7]
         output="output_%s_run_restore_%s.ipynb" % (timestamp, uuid_str)
         try:
-            pm.execute_notebook("RestoreBackup.ipynb",
+            notebook = pm.execute_notebook("RestoreBackup.ipynb",
                                 output,
                                 {
-                                 "USER": USER,
-                                 "PASS": PASS,
+                                 "USER": user,
+                                 "PASS": passw,
                                  "DIR": dir,
                                  "TAG": tag,
                                  "DEBUG": True}
                                )
         except pm.PapermillExecutionError:
-            print("failed to run %s" %(dir))
+            print("failed to run %s" %(dir_name))
             if DEBUG:
                 print(uuid_str, '=>', output)
-            sys.exit(1)
-        except:
-            print("unknown error")
+                print(str(notebook))
             sys.exit(1)
 
 
@@ -109,7 +118,7 @@ def cleanup():
                prune all images unused
         PARAM: None
     '''
-    status = os.system('''
+    status = os.system(r'''
                 find . -iname \*pyc -exec rm {} \;
                 find . -iname .DS_Store -exec rm {} \;
                 find . -iname __pycache__ -exec rmdir {} \;
@@ -118,7 +127,7 @@ def cleanup():
     assert status == 0, "failed"
 
 
-def backup_incre(dir_list):
+def backup_incre(dir_list, user="", passw=""):
     '''
         DESCRIPTION: use docker-compose to do incremental and faster
                 backup.  Must have INCR_EXPERIMENTAL as True to
@@ -127,13 +136,14 @@ def backup_incre(dir_list):
         RETURN: if success returns 0, otherwise non-zero
     '''
     try:
-        backup(dir_list, isFull=False, generate=True)
-    except:
+        backup(dir_list, is_full=False, generate=True, user=user, passw=passw)
+    except pm.PapermillException as err:
+        print(str(err))
         return -1
     return 0
 
 
-def widget_run_default_backup(pos):
+def widget_run_default_backup(pos, blist):
     '''
         DESCRIPTION: use button to trigger backup from the blist selected
         PARAM: None
