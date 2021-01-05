@@ -8,6 +8,7 @@ import uuid
 import os
 import sys
 import papermill as pm
+import ipywidgets as widgets
 
 timestamp=datetime.date.today().strftime("%Y%m%d%H%sb")
 UUID_STR=str(uuid.uuid1())[0:7]
@@ -143,21 +144,48 @@ def backup_incre(dir_list, user="", passw=""):
     return 0
 
 
-def widget_run_default_backup(pos, blist):
+class BackupWidget():
     '''
-        DESCRIPTION: use button to trigger backup from the blist selected
-        PARAM: None
+        Class to setup callback and data it uses
     '''
+    def __init__(self, dir_list):
+        self.blist = widgets.SelectMultiple(
+            options=dir_list,
+            value=dir_list,
+            rows=10,
+            description='Backup list in order of backup',
+            disabled=False
+        )
+        self.button = widgets.Button(
+            description='Backup Now',
+            disabled=False,
+            button_style='danger', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Submit the backup jobs',
+            icon='check' # (FontAwesome names without the `fa-` prefix)
+        )
+        def widget_run_default_backup(pos):
+            '''
+                DESCRIPTION: use button to trigger backup from the blist selected
+                PARAM: None
+            '''
+            selected = self.blist.trait_values()['value']
+            if DEBUG:
+                print(selected)
+            pos.set_trait('button_style', 'info')
+            pos.set_trait('description', 'In progress...')
 
-    selected = blist.trait_values()['value']
-    if DEBUG:
-        print(selected)
-    pos.set_trait('button_style', 'info')
-    pos.set_trait('description', 'In progress...')
+            if backup_incre(selected) == 0:
+                pos.set_trait('button_style', 'success')
+                pos.set_trait('description', 'Done')
+            else:
+                pos.set_trait('button_style', 'danger')
+                pos.set_trait('description', 'Failed')
 
-    if backup_incre(selected) == 0:
-        pos.set_trait('button_style', 'success')
-        pos.set_trait('description', 'Done')
-    else:
-        pos.set_trait('button_style', 'danger')
-        pos.set_trait('description', 'Failed')
+        self.button.on_click(widget_run_default_backup)
+        widgets.VBox([self.blist, self.button])
+
+    def __str__(self):
+        pass
+
+    def __ver__(self):
+        pass
