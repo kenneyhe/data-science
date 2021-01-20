@@ -19,8 +19,15 @@ repos:
     hooks:
     -   id: run-tests
         name: run tests
-        entry: python3 -m pytest 
+        entry: python3 -m pytest
         language: python
         additional_dependencies: [pre-commit, pytest]
         always_run: true
         pass_filenames: false
+-   repo: local
+    hooks:
+    -   id: git-secrets
+        name: Git Secrets
+        description: git-secrets scans commits, commit messages, and --no-ff merges
+        entry: git-secrets --pre_commit_hook
+        language: script
