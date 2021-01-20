@@ -9,11 +9,17 @@ juypter notebooks for backing up to private docker registry
   export PATH=$PATH:/usr/local/Cellar/pre-commit/2.9.3/bin
 
   brew install git-secrets
+  # add rules
   git secrets --add 'AWS_SECRET_ACCESS_KEY\s*=\s*.+'
   git secrets --add 'password\s*=\s*.+'
-  git secrets --add --allowed --literal '******'
-  export AWS_SECRET_ACCESS_KEY=*******
+
+  # tests matching
+  export AWS_SECRET_ACCESS_KEY=******
   export password=******
+
+  # add exception
+  git secrets --add --allowed --literal '******'
+
   
 
 ```
